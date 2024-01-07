@@ -1,19 +1,11 @@
 use std::sync::Arc;
 
-use axum::{
-    extract::State,
-    http::header,
-    middleware::Next,
-    response::IntoResponse,
-};
+use axum::{extract::State, http::header, middleware::Next, response::IntoResponse};
 
 use axum_extra::extract::cookie::CookieJar;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 
-use crate::{
-    auth::model::TokenClaims,
-    AppState,
-};
+use crate::{auth::model::TokenClaims, AppState};
 
 pub async fn jwt_layer(
     cookie_jar: CookieJar,
@@ -52,7 +44,7 @@ pub async fn jwt_layer(
     let user_id = uuid::Uuid::parse_str(&claims.sub).map_err(|_| crate::errors::invalid_token())?;
 
     let user = db::orm::User::get(&mut conn, user_id)
-      .await
+        .await
         .map_err(crate::errors::database_error)?;
 
     let user = user.ok_or_else(crate::errors::invalid_token)?;

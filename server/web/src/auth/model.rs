@@ -1,5 +1,4 @@
-use serde::{Serialize, Deserialize};
-
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TokenClaims {
@@ -8,14 +7,12 @@ pub struct TokenClaims {
     pub exp: usize,
 }
 
-
 #[derive(Debug, Deserialize)]
 pub struct RegisterUserSchema {
     pub username: String,
     pub salt: String,
     pub hashed_password: String,
 }
-
 
 #[derive(Debug, Deserialize)]
 pub struct LoginUserSchema {

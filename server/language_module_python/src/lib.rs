@@ -1,10 +1,5 @@
 use language_module::LanguageModule;
 
+pub struct LanguageModulePython {}
 
-pub struct LanguageModulePython {
-
-}
-
-impl LanguageModule for LanguageModulePython {
-    
-}
+impl LanguageModule for LanguageModulePython {}
