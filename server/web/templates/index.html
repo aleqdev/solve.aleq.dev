@@ -1,0 +1,70 @@
+<!-- templates/index.html -->
+{% extends "base.html" %}
+
+{% block head %}
+<script type="module">
+  import init, {
+    generate_secrets_wasm, 
+    hash_login_password_wasm
+  } from '/static/auth.js';
+  async function run() {
+      await init('/static/auth_bg.wasm');
+  }
+  run();
+
+  window.login_salt = null;
+
+  window.generate_secrets = () => {
+    const values = htmx.values(htmx.find("#register-form"));
+    const secrets = generate_secrets_wasm(values.password);
+    return {
+      salt: secrets[0],
+      hashed_password: secrets[1]
+    }
+  }
+
+  window.hash_login_password = (event) => {
+    if (event.type == "click") { // side effect of parent hx-vals
+      return {}
+    }
+
+    const values = htmx.values(htmx.find("#login-form"));
+    const hashed_password = hash_login_password_wasm(values.password, event.detail.salt);
+    return {
+      hashed_password: hashed_password
+    }
+  }
+</script>
+{% endblock %}
+{% block content %}
+<h1>Auth</h1>
+<form id="register-form">
+    <input placeholder="Your username..." required type=text name="username">
+    <input placeholder="Your password..." required type=password name="password" autocomplete="on">
+    <button 
+      hx-post="/api/auth/register" 
+      hx-trigger="click" 
+      hx-ext="json-enc" 
+      hx-params="username,salt,hashed_password" 
+      hx-vals="js:{...generate_secrets()}"
+    >
+      Register
+    </button>
+</form>
+<form 
+  id="login-form" 
+  hx-post="/api/auth/login" 
+  hx-trigger="try_login from:body" 
+  hx-ext="json-enc" 
+  hx-params="username,hashed_password" 
+  hx-vals="js:{...hash_login_password(event)}"
+>
+  <input placeholder="Your username..." required type=text name="username">
+  <input placeholder="Your password..." required type=password name="password" autocomplete="on">
+  <button hx-post="/api/auth/get_salt" hx-trigger="click" hx-ext="json-enc", hx-params="username" hx-swap="none">Login</button>
+</form>
+<div id="me" hx-get="/api/users/me" hx-target="this" hx-trigger="load" hx-swap="outerHTML">
+    Loading...
+</div>
+<button hx-get="/api/auth/logout" hx-trigger="click" hx-swap="none">Logout</button>
+{% endblock %}

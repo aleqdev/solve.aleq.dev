@@ -1,0 +1,7 @@
+[package]
+name = "language_module_cpp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+language_module = { path = "../language_module" }

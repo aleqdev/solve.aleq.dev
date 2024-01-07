@@ -1,0 +1,10 @@
+[package]
+name = "db"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+diesel = { version = "2.1.4", features = ["postgres", "uuid"] }
+diesel-async = { version = "0.4.1", features = ["postgres"] }
+diesel_migrations = { version = "2.1.0", features = ["postgres"] }
+uuid = "1.6.1"

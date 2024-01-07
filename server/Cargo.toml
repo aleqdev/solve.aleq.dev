@@ -1,0 +1,11 @@
+[workspace]
+
+members = [
+    "auth",
+    "launcher",
+    "web",
+    "db",
+    "language_module",
+    "language_module_python",
+    "language_module_cpp",
+]

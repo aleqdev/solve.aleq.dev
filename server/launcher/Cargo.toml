@@ -1,0 +1,13 @@
+[package]
+name = "launcher"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+db = { path = "../db" }
+web = { path = "../web" }
+language_module = { path = "../language_module" }
+language_module_cpp = { path = "../language_module_cpp" }
+language_module_python = { path = "../language_module_python" }
+tokio = { version = "1.35.0", features = ["macros", "rt", "rt-multi-thread"] }
+dotenvy = "0.15.7"

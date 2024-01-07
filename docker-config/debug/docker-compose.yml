@@ -1,0 +1,20 @@
+version: "3.3"
+services:
+  web:
+    build: "../.."
+    environment:
+      API_PORT: 32055
+      API_PG_HOST: psql
+      API_PG_USER: postgres
+      API_PG_PASSWORD: psqlpass
+      API_PG_PORT: 5432
+      API_PG_DATABASE: db
+    restart: always
+    ports:
+      - "32055:32055"
+  psql:
+    image: "postgres:16.1-alpine"
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: db
+    restart: always
