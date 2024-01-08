@@ -6,13 +6,18 @@
         integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
         crossorigin="anonymous"></script>
     <script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
-    <link rel="stylesheet" href="/styles.css"/>
+    <script src="https://unpkg.com/htmx.org/dist/ext/response-targets.js"></script>
+    <link rel="stylesheet" href="/static/styles.css"/>
     <title>{{ title }}</title>
-    {% block head %}{% endblock %}
+    {% include "widgets/auth-head.html" %}
 </head>
     <body>
-        <div id="content">
-            {% block content %}<p>Placeholder content</p>{% endblock %}
+        <div 
+          id="content"
+          hx-trigger="load,reload from:body"
+          hx-target="this"
+          hx-get="/content"
+        >
         </div>
     </body>
 </html>

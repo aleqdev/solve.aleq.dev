@@ -1,0 +1,25 @@
+<!-- templates/widgets/register-form.html -->
+<form id="register-form">
+  <div>
+    <label for="username">ID:</label>
+    <input required type="text" name="username">
+  </div>
+  <div>
+    <label for="username">Код:</label>
+    <input required type="password" name="password" autocomplete="on">
+  </div>
+    <button 
+      type="submit"
+      hx-post="/api/auth/register" 
+      hx-trigger="click" 
+      hx-ext="json-enc" 
+      hx-params="username,salt,hashed_password" 
+      hx-vals="js:{...generate_secrets()}" 
+      hx-swap="none" 
+      hx-target="this"
+      hx-target-4xx="#error-message"
+    >
+      Зарегистрироваться
+    </button>
+  <div id="error-message"></div>
+</form>

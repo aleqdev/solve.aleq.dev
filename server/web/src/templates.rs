@@ -7,7 +7,15 @@ pub struct BaseTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "index.html")]
-pub struct IndexTemplate<'a> {
-    pub title: &'a str,
+#[template(path = "content.html")]
+pub struct ContentTemplate {
+    pub user_logged_in: bool
 }
+
+#[derive(Template)]
+#[template(path = "widgets/login-form.html")]
+pub struct LoginFormTemplate {}
+
+#[derive(Template)]
+#[template(path = "widgets/register-form.html")]
+pub struct RegisterFormTemplate {}

@@ -18,3 +18,11 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: db
     restart: always
+  pgadmin:
+    image: "dpage/pgadmin4:latest"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: aleqmail@ya.ru
+      PGADMIN_DEFAULT_PASSWORD: aleqpassword
+    restart: always
+    ports:
+      - "5051:80"

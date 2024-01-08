@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use super::model::{GetSaltSchema, LoginUserSchema, RegisterUserSchema, TokenClaims};
+use super::model::{GetSaltSchema, LoginUserSchema, RegisterUserSchema, GetMeSchema, TokenClaims};
 use crate::AppState;
 use axum::{
     extract::State,
     http::{header, Response, StatusCode},
     response::IntoResponse,
-    Extension, Json,
+    Extension, Json, body::Body,
 };
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use jsonwebtoken::{encode, EncodingKey, Header};
@@ -15,15 +15,16 @@ use serde_json::json;
 pub async fn register_user_handler(
     State(state): State<Arc<AppState>>,
     Json(body): Json<RegisterUserSchema>,
-) -> Result<impl IntoResponse, crate::errors::Ty> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let mut conn = state.db.get().await.unwrap();
 
     let user_exists: bool = db::orm::User::exists_with_username(&mut conn, &body.username)
         .await
-        .map_err(crate::errors::database_error)?;
+        .map_err(crate::errors::database_error)
+        .map_err(IntoResponse::into_response)?;
 
     if user_exists {
-        return Err(crate::errors::user_exists());
+        return Err(crate::errors::user_exists_htmx());
     }
 
     let salt = body.salt;
@@ -36,30 +37,56 @@ pub async fn register_user_handler(
         hashed_password.as_bytes(),
     )
     .await
-    .map_err(crate::errors::database_error)?;
+    .map_err(crate::errors::database_error)
+    .map_err(IntoResponse::into_response)?;
 
-    let user_response = serde_json::json!({"status": "success","data": serde_json::json!({
-        "user": filter_user_record(&user)
-    })});
+    let now = chrono::Utc::now();
+    let iat = now.timestamp() as usize;
+    let exp = (now + chrono::Duration::minutes(60)).timestamp() as usize;
+    let claims: TokenClaims = TokenClaims {
+        sub: user.id.to_string(),
+        exp,
+        iat,
+    };
 
-    Ok(Json(user_response))
+    let token = encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(state.jwt_config.secret.as_bytes()),
+    )
+    .unwrap();
+
+    let cookie = Cookie::build(("token", token.to_owned()))
+        .path("/")
+        .max_age(time::Duration::hours(1))
+        .same_site(SameSite::Lax)
+        .http_only(true);
+
+    let mut response = Response::new(json!({"status": "success", "token": token}).to_string());
+    let headers = response.headers_mut();
+        
+    headers.insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    headers.insert("HX-Trigger", "reload".parse().unwrap());
+
+    Ok(response)
 }
 
 pub async fn login_user_handler(
     State(state): State<Arc<AppState>>,
     Json(body): Json<LoginUserSchema>,
-) -> Result<impl IntoResponse, crate::errors::Ty> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let mut conn = state.db.get().await.unwrap();
 
     let user = db::orm::User::get_by_username(&mut conn, &body.username)
         .await
-        .map_err(crate::errors::database_error)?
-        .ok_or_else(crate::errors::invalid_username_or_password)?;
+        .map_err(crate::errors::database_error)
+        .map_err(IntoResponse::into_response)?
+        .ok_or_else(crate::errors::invalid_username_or_password_htmx)?;
 
     let is_valid = user.password_hash == body.hashed_password.as_bytes();
 
     if !is_valid {
-        return Err(crate::errors::invalid_username_or_password());
+        return Err(crate::errors::invalid_username_or_password_htmx());
     }
 
     let now = chrono::Utc::now();
@@ -85,9 +112,10 @@ pub async fn login_user_handler(
         .http_only(true);
 
     let mut response = Response::new(json!({"status": "success", "token": token}).to_string());
-    response
-        .headers_mut()
-        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    let headers = response.headers_mut();
+
+    headers.insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    headers.insert("HX-Trigger", "reload".parse().unwrap());
 
     Ok(response)
 }
@@ -95,13 +123,14 @@ pub async fn login_user_handler(
 pub async fn get_salt_handler(
     State(state): State<Arc<AppState>>,
     Json(body): Json<GetSaltSchema>,
-) -> Result<impl IntoResponse, crate::errors::Ty> {
+) -> Result<impl IntoResponse, impl IntoResponse> {
     let mut conn = state.db.get().await.unwrap();
 
     let user = db::orm::User::get_by_username(&mut conn, &body.username)
         .await
-        .map_err(crate::errors::database_error)?
-        .ok_or_else(crate::errors::invalid_username_or_password)?;
+        .map_err(crate::errors::database_error)
+        .map_err(IntoResponse::into_response)?
+        .ok_or_else(crate::errors::invalid_username_or_password_htmx)?;
 
     let salt = std::str::from_utf8(&user.salt).unwrap();
     let hx_trigger = format!(r#"{{"try_login":{{"salt": "{salt}"}}}}"#);
@@ -111,7 +140,7 @@ pub async fn get_salt_handler(
         .headers_mut()
         .insert("HX-Trigger", hx_trigger.parse().unwrap());
 
-    Ok(response)
+    Ok::<_, Response<Body>>(response)
 }
 
 pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
@@ -122,24 +151,34 @@ pub async fn logout_handler() -> Result<impl IntoResponse, (StatusCode, Json<ser
         .http_only(true);
 
     let mut response = Response::new(json!({"status": "success"}).to_string());
-    response
-        .headers_mut()
-        .insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    let headers = response.headers_mut();
+
+    headers.insert(header::SET_COOKIE, cookie.to_string().parse().unwrap());
+    headers.insert("HX-Trigger", "reload".parse().unwrap());
 
     Ok(response)
 }
 
 pub async fn get_me_handler(
     Extension(user): Extension<db::orm::User>,
+    Json(body): Json<GetMeSchema>,
 ) -> Result<impl IntoResponse, (StatusCode, Json<serde_json::Value>)> {
-    let json_response = serde_json::json!({
-        "status":  "success",
-        "data": serde_json::json!({
-            "user": filter_user_record(&user)
-        })
-    });
-
-    Ok(Json(json_response))
+  match body.query.as_str() {
+    "all" => return Ok(Json(serde_json::json!({
+      "status":  "success",
+      "data": serde_json::json!({
+          "user": filter_user_record(&user)
+      })
+    })).into_response()),
+    "username" => return Ok(user.username.into_response()),
+    _ => {
+      let error_response = serde_json::json!({
+        "status": "error",
+        "message": "Invalid query",
+      });
+      return Err((StatusCode::BAD_REQUEST, Json(error_response)));
+    }
+  }
 }
 
 #[derive(Debug, serde::Serialize)]

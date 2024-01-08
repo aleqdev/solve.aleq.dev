@@ -1,0 +1,32 @@
+<!-- templates/widgets/auth-head.html -->
+<script type="module">
+  import init, {
+    generate_secrets_wasm, 
+    hash_login_password_wasm
+  } from '/static/auth.js';
+  async function run() {
+      await init('/static/auth_bg.wasm');
+  }
+  run();
+
+  window.generate_secrets = () => {
+    const values = htmx.values(htmx.find("#register-form"));
+    const secrets = generate_secrets_wasm(values.password);
+    return {
+      salt: secrets[0],
+      hashed_password: secrets[1]
+    }
+  }
+
+  window.hash_login_password = (event) => {
+    if (event.type == "click") { // side effect of parent hx-vals
+      return {}
+    }
+
+    const values = htmx.values(htmx.find("#login-form"));
+    const hashed_password = hash_login_password_wasm(values.password, event.detail.salt);
+    return {
+      hashed_password: hashed_password
+    }
+  }
+</script>

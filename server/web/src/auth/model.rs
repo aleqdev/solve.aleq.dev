@@ -24,3 +24,8 @@ pub struct LoginUserSchema {
 pub struct GetSaltSchema {
     pub username: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct GetMeSchema {
+    pub query: String,
+}

@@ -47,7 +47,8 @@ RUN for DIR in $(ls -d */); \
     done
 RUN cargo build --release
 
-RUN mkdir /program /program/static
+RUN mkdir /program
+RUN cp -R /server/web/static /program
 COPY docker-config/debug/.env /program/.env
 RUN cp /server/target/release/launcher /program/
 RUN cp /server/auth/pkg/auth.js /program/static/auth.js

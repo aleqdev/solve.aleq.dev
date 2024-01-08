@@ -1,0 +1,31 @@
+<!-- templates/widgets/login-form.html -->
+<form 
+  id="login-form" 
+  hx-post="/api/auth/login" 
+  hx-trigger="try_login from:body" 
+  hx-ext="json-enc" 
+  hx-params="username,hashed_password" 
+  hx-vals="js:{...hash_login_password(event)}"
+  hx-swap="none"
+  hx-target="this"
+  hx-target-4xx="#error-message"
+>
+  <div>
+    <label for="username">ID:</label>
+    <input required type="text" name="username">
+  </div>
+  <div>
+    <label for="username">Код:</label>
+    <input required type="password" name="password" autocomplete="on">
+  </div>
+  <button 
+    hx-post="/api/auth/get_salt" 
+    hx-trigger="click" 
+    hx-ext="json-enc", 
+    hx-params="username" 
+    hx-swap="none"
+  >
+    Войти
+  </button>
+  <div id="error-message"></div>
+</form>

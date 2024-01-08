@@ -1,7 +1,4 @@
 <!-- templates/widgets/auth.html -->
-<form hx-post="/login" hx-swap="innerHTML:#auth-token">
-  <input type="text" name="username" />
-  <input type="password" name="password" />
-  <button type="submit">Войти</button>
-</form>
-<div id="auth-token"></div>
+<div id="auth-page" hx-ext="response-targets">
+  {% include "widgets/login-form.html" %}
+</div>

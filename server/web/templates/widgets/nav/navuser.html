@@ -1,0 +1,11 @@
+<!-- templates/widgets/nav/navuser.html -->
+<div 
+  class="navuser" 
+  hx-post="/api/users/me" 
+  hx-target="this" 
+  hx-trigger="load" 
+  hx-vals='{"query": "username"}'
+  hx-ext="json-enc"
+>
+  
+</div>

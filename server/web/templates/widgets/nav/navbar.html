@@ -1,0 +1,10 @@
+<!-- templates/widgets/nav/navbar.html -->
+<div id="navbar">
+  {% if user_logged_in %}
+    {% include "widgets/nav/logout.html" %}
+    {% include "widgets/nav/navuser.html" %}
+  {% else %}
+    {% include "widgets/nav/register.html" %}
+    {% include "widgets/nav/login.html" %}
+  {% endif %}
+</div>

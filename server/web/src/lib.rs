@@ -4,6 +4,7 @@ pub mod templates;
 
 use std::sync::Arc;
 
+use auth::jwt::UserLoggedIn;
 use axum::{
     http::{
         header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE},
@@ -11,7 +12,7 @@ use axum::{
     },
     middleware,
     routing::{get, post},
-    Router,
+    Router, Extension,
 };
 use diesel_async::{
     pg::AsyncPgConnection,
@@ -74,9 +75,32 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         .route(
             "/",
             get(|| async {
-                templates::IndexTemplate {
-                    title: "Главная"
+                templates::BaseTemplate {
+                    title: "Главная",
                 }
+            })
+        )
+        .route(
+          "/content",
+          get(|Extension(user_logged_in): Extension<UserLoggedIn>,| async move {
+              templates::ContentTemplate {
+                  user_logged_in: user_logged_in.0
+              }
+          }).route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth::jwt_layer_boolean,
+        )),
+      )
+        .route(
+          "/widgets/register-form",
+          get(|| async {
+              templates::RegisterFormTemplate {}
+          }),
+          )
+          .route(
+            "/widgets/login-form",
+            get(|| async {
+                templates::LoginFormTemplate {}
             }),
         )
         .route("/api/auth/register", post(auth::register_user_handler))
@@ -91,7 +115,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         )
         .route(
             "/api/users/me",
-            get(auth::get_me_handler).route_layer(middleware::from_fn_with_state(
+            post(auth::get_me_handler).route_layer(middleware::from_fn_with_state(
                 state.clone(),
                 auth::jwt_layer,
             )),
